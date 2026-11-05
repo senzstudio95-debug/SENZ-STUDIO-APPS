@@ -26,7 +26,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=r
   await drag(rect.x+75,cy,rect.x+75,cy+35);after=await state();assert(after.guides[0].position>original,'Guide can move');
   const count=after.objects;await p.keyboard.press('Delete');after=await state();assert.equal(after.guides.length,0);assert.equal(after.objects,count,'Deleting guide preserves artwork');
   await p.keyboard.press('Control+z');assert.equal((await state()).guides.length,1,'Ctrl+Z still undoes guide deletion');await p.keyboard.press('Control+Shift+z');assert.equal((await state()).guides.length,0);
-  await drag(rect.x+12,cy,cx,cy);assert.equal((await state()).guides[0].axis,'x');
+  const rulerStart=await p.evaluate(()=>{const r=document.querySelector('.ruler-left').getBoundingClientRect();for(let y=r.top+28;y<r.bottom-5;y+=5){const x=r.left+12;if(document.elementFromPoint(x,y)?.closest('.ruler-left'))return {x,y};}return null;});assert(rulerStart,'Left ruler must have an exposed drag area');await drag(rulerStart.x,rulerStart.y,cx,cy);assert.equal((await state()).guides[0].axis,'x');
   // Cancelling a move restores the original guide position.
   before=await state();await p.mouse.move(cx,rect.y+80);await p.mouse.down();await p.mouse.move(cx+30,rect.y+80);await p.keyboard.press('Escape');await p.mouse.up();assert.equal((await state()).guides[0].position,before.guides[0].position);
   await drag(cx,rect.y+80,rect.x+12,rect.y+80);assert.equal((await state()).guides.length,0,'Dragging back to ruler removes guide');

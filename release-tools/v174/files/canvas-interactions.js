@@ -59,6 +59,7 @@ export function installCanvasInteractions({editor,actions,windows,guides}){
  document.addEventListener('pointerup',e=>{if(!gesture||gesture.id!==e.pointerId)return;consume(e);finish(true,e);},true);
  document.addEventListener('pointercancel',e=>{if(gesture?.id===e.pointerId){consume(e);finish(false);}},true);
  vp.addEventListener('lostpointercapture',e=>{if(gesture?.id===e.pointerId)finish(false);});
+ vp.addEventListener('dblclick',e=>{if(zoomMode||e.target.closest('.canvas-guide,.canvas-ruler'))consume(e);},true);
  vp.addEventListener('wheel',e=>{if(gesture)consume(e);},{capture:true,passive:false});
  document.addEventListener('keydown',e=>{
   if(typing(e.target)||document.querySelector('dialog[open]')||e.ctrlKey||e.metaKey||e.altKey)return;
