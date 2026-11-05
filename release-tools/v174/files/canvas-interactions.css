@@ -1,0 +1,17 @@
+.canvas-ruler{pointer-events:auto;touch-action:none}
+.ruler-top{cursor:row-resize}.ruler-left{cursor:col-resize}
+.canvas-guide-layer{position:absolute;inset:24px 0 0 24px;overflow:hidden;pointer-events:none;z-index:7}
+.canvas-guide-layer[hidden]{display:none!important}
+.canvas-guide{position:absolute;pointer-events:auto;touch-action:none;outline:none}
+.guide-vertical{top:-24px;bottom:0;width:9px;margin-left:-28px;cursor:col-resize}
+.guide-horizontal{left:-24px;right:0;height:9px;margin-top:-28px;cursor:row-resize}
+.canvas-guide::after{content:'';position:absolute;background:#00b9e8;pointer-events:none}
+.guide-vertical::after{left:4px;top:0;bottom:0;width:1px}.guide-horizontal::after{top:4px;left:0;right:0;height:1px}
+.canvas-guide.selected::after,.canvas-guide:focus-visible::after{background:#ff4294;box-shadow:0 0 2px #fff}
+.scrub-zoom-mode,.scrub-zoom-mode *{cursor:zoom-in!important}
+.scrub-zoom-mode .ruler-top{cursor:row-resize!important}.scrub-zoom-mode .ruler-left{cursor:col-resize!important}
+.quick-font-drag-title{cursor:grab!important;touch-action:none;user-select:none}.quick-font-drag-title:active{cursor:grabbing!important}
+.quick-font .qmini-handle{font-size:11px!important;white-space:nowrap;touch-action:none}
+.view-controls [data-action="zoom-tool"] svg{width:18px;height:18px;display:block}
+.view-controls [data-action="zoom-tool"][aria-pressed="true"]{outline:1px solid #168cf2}
+@media print{.canvas-guide-layer{display:none!important}}
