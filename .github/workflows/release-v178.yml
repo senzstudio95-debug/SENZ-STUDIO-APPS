@@ -8,7 +8,7 @@ permissions:
   contents: write
 concurrency:
   group: release-v2.9.178
-  cancel-in-progress: false
+  cancel-in-progress: true
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -20,12 +20,21 @@ jobs:
       - uses: actions/checkout@v4
       - name: Check release base
         run: test "$(gh api repos/$GH_REPO/releases/latest --jq .tag_name)" = v2.9.177
-      - name: Prepare tools and verified app
+      - name: Install installer tools
+        timeout-minutes: 4
         run: |
-          sudo apt-get update -qq && sudo apt-get install -y nsis p7zip-full
-          gh release download v2.9.177 --pattern SENZ-STUDIO-UPDATE-v2.9.177.exe
-          python3 release-tools/v178/prepare.py
-          npm install --no-save --ignore-scripts playwright
+          sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 update -qq
+          sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 install -y nsis p7zip-full
+      - name: Download verified base
+        timeout-minutes: 4
+        run: gh release download v2.9.177 --pattern SENZ-STUDIO-UPDATE-v2.9.177.exe
+      - name: Prepare app
+        timeout-minutes: 3
+        run: python3 release-tools/v178/prepare.py
+      - name: Install browser test tools
+        timeout-minutes: 5
+        run: |
+          npm install --no-save --ignore-scripts --fetch-timeout=60000 --fetch-retries=1 playwright
           npx playwright install --with-deps chromium
       - name: Test real canvas interactions
         run: |
@@ -65,4 +74,5 @@ jobs:
           const fs=require('fs'),path=require('path'),d=JSON.parse(fs.readFileSync('published178.json'));
           if(!require(path.resolve('payload/resources/app/update-core.cjs')).release(d,process.env.GH_REPO,'2.9.177'))throw Error('Published metadata rejected');
           JS
+
 
