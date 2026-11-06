@@ -7,18 +7,19 @@ let running;const watchdog=setTimeout(()=>{console.error('Full Studio test excee
 (async()=>{let app;try{
  app=await _electron.launch({executablePath:require('../../apps/senz-tube/node_modules/electron'),args:['--no-sandbox',fixture],timeout:60000});
  app.process().stdout?.on('data',d=>process.stdout.write(d));app.process().stderr?.on('data',d=>process.stderr.write(d));
- running=app;let editor;for(let i=0;i<120;i++){editor=app.windows().find(w=>w.url().startsWith('senz://app/index.html'));if(editor)break;if(fs.existsSync(errors))throw Error(fs.readFileSync(errors,'utf8'));await new Promise(r=>setTimeout(r,500));}
- if(!editor){console.log('Window URLs',app.windows().map(w=>w.url()));console.log('Native windows',await app.evaluate(({app,BrowserWindow})=>({ready:app.isReady(),argv:process.argv,windows:BrowserWindow.getAllWindows().map(w=>({url:w.webContents.getURL(),visible:w.isVisible(),title:w.getTitle()}))})));fs.mkdirSync('apps/senz-tube/ui-artifacts',{recursive:true});let i=0;for(const w of app.windows())await w.screenshot({path:'apps/senz-tube/ui-artifacts/studio-failure-'+i+++'.png'}).catch(()=>{});}
- assert.ok(editor,'Full Studio editor window opened');
- await editor.waitForFunction(()=>document.readyState==='complete'&&!!document.querySelector('canvas'),{timeout:60000});
- for(let i=0;i<60;i++){if(await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().some(w=>w.webContents.getURL().startsWith('senz://app/index.html')&&w.isVisible())))break;await new Promise(r=>setTimeout(r,250));}
- assert.ok(await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().some(w=>w.webContents.getURL().startsWith('senz://app/index.html')&&w.isVisible())),'Editor revealed after splash');
+ running=app;let ready=false;
+ for(let i=0;i<120;i++){
+  if(fs.existsSync(errors))throw Error(fs.readFileSync(errors,'utf8'));
+  ready=await app.evaluate(async({BrowserWindow})=>{const w=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().startsWith('senz://app/index.html'));return !!w&&w.isVisible()&&await w.webContents.executeJavaScript("document.readyState==='complete'&&!!document.querySelector('canvas')");});
+  if(ready)break;await new Promise(r=>setTimeout(r,500));
+ }
+ assert.ok(ready,'Real Studio editor loaded and visible after splash');
  assert.equal(fs.existsSync(errors),false,'No main-process startup errors');
  await app.evaluate(({app})=>{global.__secondLaunch=false;app.on('second-instance',()=>{global.__secondLaunch=true;});});
  const child=spawn(require('../../apps/senz-tube/node_modules/electron'),['--no-sandbox',fixture],{stdio:'ignore'});
  await new Promise((resolve,reject)=>{const timer=setTimeout(()=>{child.kill();reject(Error('Second instance did not exit'));},20000);child.once('error',reject);child.once('exit',()=>{clearTimeout(timer);resolve();});});
  assert.equal(await app.evaluate(()=>global.__secondLaunch),true,'Second launch reached the initialized primary process');
  assert.equal(fs.existsSync(errors),false,'Second launch causes no desktopLayout error');
- fs.mkdirSync('apps/senz-tube/ui-artifacts',{recursive:true});await editor.screenshot({path:'apps/senz-tube/ui-artifacts/full-studio-startup.png'});
+ fs.mkdirSync('apps/senz-tube/ui-artifacts',{recursive:true});const png=await app.evaluate(async({BrowserWindow})=>{const w=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().startsWith('senz://app/index.html'));return (await w.webContents.capturePage()).toPNG().toString('base64');});fs.writeFileSync('apps/senz-tube/ui-artifacts/full-studio-startup.png',Buffer.from(png,'base64'));
  console.log('FULL STUDIO STARTUP PASSED: real bootstrap, all services, editor, splash, second-instance activation');
  }finally{if(fs.existsSync(errors))console.error(fs.readFileSync(errors,'utf8'));clearTimeout(watchdog);if(app)app.process().kill();try{fs.rmSync(temp,{recursive:true,force:true});}catch{}}})().catch(e=>{console.error(e);process.exit(1);});
