@@ -1,0 +1,3 @@
+const electron=require('electron');
+electron.app.setName('SENZ TUBE');if(process.env.SENZ_TUBE_TEST==='1'&&process.env.SENZ_TUBE_PROFILE)electron.app.setPath('userData',process.env.SENZ_TUBE_PROFILE);electron.app.setAppUserModelId('studio.senz.tube');
+if(!electron.app.requestSingleInstanceLock())electron.app.quit();else{let tube;electron.app.whenReady().then(()=>{electron.nativeTheme.themeSource='dark';tube=require('./tube-main.cjs').install({electron});if(process.env.SENZ_TUBE_TEST==='1')global.__tube=tube;tube.open();});electron.app.on('second-instance',()=>tube?.open());electron.app.on('window-all-closed',()=>electron.app.quit());}
