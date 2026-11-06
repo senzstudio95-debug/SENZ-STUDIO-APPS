@@ -11,7 +11,7 @@ subprocess.run(['7z','x','-y',str(base),'-obase'],check=True);shutil.move('base/
 assert json.loads((app/'package.json').read_text())['version']=='2.9.184'
 before={p.relative_to(root).as_posix():digest(p) for p in root.rglob('*') if p.is_file()}
 runtime_zip=Path('electron-v44.10.2-win32-x64.zip')
-assert digest(runtime_zip)=='7af18e85a1537b832924ae3b0e5146602f2f4b0c77c74e4ae0dc251ca338f9'
+assert digest(runtime_zip)=='7af18e85a1537b832924ae3b0e5146602f2f4f4b0c77c74e4ae0dc251ca338f9'
 runtime_names=[]
 with zipfile.ZipFile(runtime_zip) as z:
  for n in z.namelist():
