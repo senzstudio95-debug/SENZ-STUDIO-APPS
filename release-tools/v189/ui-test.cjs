@@ -287,6 +287,6 @@ async function resizeChecks(p){
  await p.setViewportSize({width:1280,height:720});await p.waitForTimeout(200);const limited=await dialog.boundingBox();assert.ok(limited.x>=0&&limited.y>=0&&limited.x+limited.width<=1281&&limited.y+limited.height<=721,'Resized window clamped after display change');
  await p.screenshot({path:'ui-artifacts/arrange-resized.png'});await grip.focus();await p.keyboard.press('Home');
  assert.equal(await p.evaluate(()=>JSON.stringify(__senzTest.editor.project)),project,'Window resize leaves all artwork unchanged');
- await p.locator('.aa-header [data-aa="close"]').click();await p.setViewportSize({width:1440,height:1000});
+ await p.locator('.aa-header [data-aa="close"]').click();await p.setViewportSize({width:1440,height:1000});await p.waitForTimeout(500);
  console.log('PASS: Auto Arrange pointer/keyboard resizing, viewport bounds, actions, unchanged artwork');
 }
