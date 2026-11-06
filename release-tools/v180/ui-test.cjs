@@ -162,13 +162,14 @@ async function checkVectorBoxes(p,assert){
  });
  for(const type of ['text','shape','icon','image']){
   await p.evaluate(type=>__senzTest.editor.select('box-'+type),type);
+  await p.waitForFunction(()=>document.querySelector('#text-frame').checked===!!__senzTest.editor.selected.frameEnabled);
   assert.equal(await p.locator('#text-frame').isDisabled(),false,`${type} enables Vector Box`);
   await p.locator('#text-frame').evaluate(el=>el.click());
   let before=await p.evaluate(()=>{const o=__senzTest.editor.selected,r=document.querySelector(`[data-object="${o.id}"] [data-vector-box]`);return {o:structuredClone(o),stroke:r?.getAttribute('stroke'),width:Number(r?.getAttribute('width'))};});
-  assert.equal(before.o.type,type);assert.equal(before.o.frameEnabled,true);assert.equal(before.stroke,'#ff0000');
+  assert.equal(before.o.type,type);assert.equal(before.o.frameEnabled,true,type+' frame enables');assert.equal(before.stroke,'#ff0000');
   await p.evaluate(()=>{const e=__senzTest.editor;e.updateSelected({color:'#0000ff'});const o=e.selected;e.updateSelected(o.type==='text'?{size:o.size*1.25}:{w:o.w*1.5,h:o.h*1.5});});
   let after=await p.evaluate(async()=>{const o=__senzTest.editor.selected,{objectMarkup}=await import('/editor.js'),{visibleBounds}=await import('/object-transform.js'),r=document.querySelector(`[data-object="${o.id}"] [data-vector-box]`);return {o:structuredClone(o),stroke:r?.getAttribute('stroke'),width:Number(r?.getAttribute('width')),markup:objectMarkup(o),bounds:visibleBounds(o)};});
-  assert.equal(after.o.type,type,'Original artwork is not flattened');assert.equal(after.o.color,'#0000ff');assert.equal(after.stroke,before.stroke,'Recolor leaves frame unchanged');assert(after.width>before.width,'Box follows resized artwork');assert(after.bounds.w>after.o.w,'Selection includes frame');assert(after.markup.includes('stroke="#ff0000"'),'Export markup preserves frame color');
+  assert.equal(after.o.type,type,'Original artwork is not flattened');assert.equal(after.o.color,'#0000ff');assert.equal(after.stroke,before.stroke,'Recolor leaves frame unchanged');assert(after.width>before.width,'Box follows resized artwork');assert(after.bounds.w>after.width,'Selection includes frame stroke');assert(after.markup.includes('stroke="#ff0000"'),'Export markup preserves frame color');
   if(type==='text')assert.equal(after.o.text,'Editable SENZ');
   if(type==='image')assert(after.markup.includes('#0000ff'),'SVG artwork recolors');
  }
@@ -178,7 +179,7 @@ async function checkVectorBoxes(p,assert){
  // Load opens page zero; return to the new test page.
  await p.evaluate(()=>{const e=__senzTest.editor;e.changePage(e.project.pages.length-1);e.select('box-shape');});
  assert.equal(await p.evaluate(()=>__senzTest.editor.selected.frameColor),'#ff0000','Frame color survives save/load');
- await p.locator('#text-frame').evaluate(el=>el.click());assert.equal(await p.locator('[data-object="box-shape"] [data-vector-box]').count(),0);
+ await p.waitForFunction(()=>document.querySelector('#text-frame').checked===true);await p.locator('#text-frame').evaluate(el=>el.click());assert.equal(await p.locator('[data-object="box-shape"] [data-vector-box]').count(),0);
  await p.evaluate(()=>{const e=__senzTest.editor;e.undo();e.select('box-shape');});assert.equal(await p.locator('[data-object="box-shape"] [data-vector-box]').count(),1,'Undo restores box');
  // Test fixed opposite corner during a framed image resize, including mirror state.
  const anchored=await p.evaluate(async()=>{const e=__senzTest.editor,o=e.page.objects.find(o=>o.id==='box-image'),{visibleBounds,resizeObject}=await import('/object-transform.js');const original=structuredClone(o),b=visibleBounds(o),x=o.x+b.x,y=o.y+b.y;resizeObject({object:o,original,ink:b,handle:'se'},35,20);e.refresh();const n=visibleBounds(o);return Math.abs(o.x+n.x-x)<.001&&Math.abs(o.y+n.y-y)<.001;});assert(anchored,'Frame resize anchor is stable');
@@ -192,3 +193,4 @@ async function checkVectorBoxes(p,assert){
  const separated=await p.evaluate(()=>__senzTest.editor.selectedObjects);assert.equal(separated.length,3);assert(separated.every(o=>o.color==='#ff0000'&&o.name==='Vector box'),'Separate supports every object and preserves frame paint');
  console.log('PASS: editable text, shape, icon and SVG boxes; independent color; resize and image render cache; selection bounds; export; save/load; undo; detach.');
 }
+
