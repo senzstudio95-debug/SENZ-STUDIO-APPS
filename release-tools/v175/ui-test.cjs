@@ -53,8 +53,8 @@ async function runNewChecks(p,assert){
  let shape=await p.evaluate(()=>JSON.parse(JSON.stringify(__senzTest.editor.selected)));assert.equal(shape.type,'shape');assert.equal(shape.outline,true);assert.equal(shape.strokeWidth,4);
  const markup=await p.evaluate(async()=>{const {shapeMarkup}=await import('/editor.js');return shapeMarkup(__senzTest.editor.selected);});assert(markup.includes('fill="none"')&&markup.includes('stroke-width="4"'),'Shape rendering is outline');
  await p.evaluate(()=>__senzTest.actions.tool('shape'));await p.locator('#shape-outline').uncheck();assert.equal(await p.evaluate(()=>__senzTest.editor.selected.outline),false);
- await p.evaluate(()=>__senzTest.actions.undo());assert.equal(await p.evaluate(()=>__senzTest.editor.selected.outline),true,'Undo restores outline');
- await p.evaluate(()=>__senzTest.actions.redo());assert.equal(await p.evaluate(()=>__senzTest.editor.selected.outline),false);
+ await p.evaluate(()=>__senzTest.actions.undo());assert.equal(await p.evaluate(id=>__senzTest.editor.page.objects.find(o=>o.id===id).outline,shape.id),true,'Undo restores outline');
+ await p.evaluate(()=>__senzTest.actions.redo());assert.equal(await p.evaluate(id=>__senzTest.editor.page.objects.find(o=>o.id===id).outline,shape.id),false);await p.evaluate(id=>__senzTest.editor.select(id),shape.id);
  await p.locator('#shape-outline').check();
  await p.evaluate(()=>__senzTest.actions['close-tool']());
  // Release zoom and immediately move the selected shape with no V/Escape.
