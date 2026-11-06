@@ -198,6 +198,7 @@ async function checkSharedBox(p,assert){
  await p.waitForFunction(()=>!document.querySelector('#text-frame').checked);await p.locator('#text-frame').evaluate(el=>el.click());
  let result=await p.evaluate(()=>({objects:structuredClone(__senzTest.editor.page.objects),selection:__senzTest.editor.selection}));
  let box=result.objects.find(o=>o.vectorBoxContainer);assert(box,'One common box exists');assert.equal(result.objects.filter(o=>o.vectorBoxContainer).length,1);assert(result.objects.filter(o=>!o.vectorBoxContainer).every(o=>!o.frameEnabled),'No individual boxes');assert.equal(await p.locator('#canvas [data-vector-box]').count(),0);
+ await p.evaluate(()=>__senzTest.editor.select([]));const hit=await p.locator('[data-object="shared-text"]').boundingBox();await p.mouse.click(hit.x+hit.width/2,hit.y+hit.height/2);assert.deepEqual(await p.evaluate(()=>__senzTest.editor.selection),['shared-text'],'Box interior does not intercept artwork selection');
  const bounds=await p.evaluate(async()=>{const {inkBounds}=await import('/auto-arrange.js');return __senzTest.editor.page.objects.filter(o=>!o.vectorBoxContainer).map(inkBounds);});for(const b of bounds){assert(b.x>box.x&&b.y>box.y);assert(b.x+b.w<box.x+box.w&&b.y+b.h<box.y+box.h);}
  await p.evaluate(()=>{const e=__senzTest.editor;e.select('shared-text');e.updateSelected({text:'teena love',size:85,color:'#0000ff'});});
  await p.waitForFunction(()=>document.querySelector('#text-frame').checked);

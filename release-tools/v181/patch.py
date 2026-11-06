@@ -21,3 +21,5 @@ patch('object-groups.js',"['groupId','libraryPairId']", "['groupId','libraryPair
 patch('export.js',"import {makeVDoc}", "import {syncVectorBoxes} from './shared-vector-box.js';\nimport {makeVDoc}")
 patch('export.js'," const w=project.width*PX_MM,h=project.height*PX_MM;const css='';", " page=structuredClone(page);for(const o of page.objects)if(!o.hidden&&o.type==='text')await expandAndUnite(o,fonts);syncVectorBoxes(page);\n const w=project.width*PX_MM,h=project.height*PX_MM;const css='';")
 patch('auto-arrange.js',"!o.hidden&&!o.locked&&!o.markingTemplate", "!o.hidden&&!o.locked&&!o.markingTemplate&&!o.vectorBoxContainer")
+
+patch('editor.js',"interactive&&!o.markingTemplate&&", "interactive&&!o.vectorBoxContainer&&!o.markingTemplate&&")
