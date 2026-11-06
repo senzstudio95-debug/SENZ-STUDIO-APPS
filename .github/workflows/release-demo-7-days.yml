@@ -1,8 +1,5 @@
 name: Publish v2.9.173 - seven-day demo
 on:
-  push:
-    branches: [main]
-    paths: [.github/workflows/release-demo-7-days.yml]
   workflow_dispatch:
 permissions:
   contents: write

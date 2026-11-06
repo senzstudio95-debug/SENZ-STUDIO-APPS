@@ -1,8 +1,5 @@
 name: Build and publish v2.9.177 canvas tools
 on:
-  push:
-    branches: [main]
-    paths: [release-tools/v177/**, .github/workflows/release-v177.yml]
   workflow_dispatch:
 permissions:
   contents: write

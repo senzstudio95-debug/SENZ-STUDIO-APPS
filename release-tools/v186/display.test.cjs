@@ -1,2 +1,0 @@
-const {test}=require('node:test'),assert=require('node:assert/strict'),{displayZoom,initialBounds}=require('./app-files/adaptive-display.cjs');
-test('4K and Windows DPI use logical work area once',()=>{for(const [width,height,scaleFactor,expected] of [[3840,2120,1,1.35],[2560,1400,1.5,1.15],[1920,1040,2,1],[1366,768,1,.85]]){const display={workArea:{x:-width,y:0,width,height},scaleFactor};assert.equal(displayZoom(display),expected);const b=initialBounds(display);assert.ok(b.x>=-width&&b.x+b.width<=0&&b.height<=height);assert.deepEqual(initialBounds(display),b);}});

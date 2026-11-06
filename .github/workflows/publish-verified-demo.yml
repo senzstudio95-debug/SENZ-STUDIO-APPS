@@ -1,8 +1,5 @@
 name: Publish verified v2.9.173 draft
 on:
-  push:
-    branches: [main]
-    paths: [.github/workflows/publish-verified-demo.yml]
   workflow_dispatch:
 permissions:
   contents: write

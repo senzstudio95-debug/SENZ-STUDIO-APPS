@@ -1,0 +1,43 @@
+name: Restore v2.9.185 stable release
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/restore-v185.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: restore-v185
+  cancel-in-progress: false
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Verify original installer and restore stable channel
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh api repos/$GH_REPO/releases/tags/v2.9.185 > stable.json
+          python3 - <<'PY'
+          import json
+          r=json.load(open('stable.json'))
+          a=next(a for a in r['assets'] if a['name']=='SENZ-STUDIO-UPDATE-v2.9.185.exe')
+          assert a['size']==557461145
+          assert a['digest']=='sha256:6b72b6f6a0c27b17f1d35f6a5899d2bb33616981d3bda91a0d3c3c8965c41896'
+          assert not r['draft']
+          PY
+          for tag in v2.9.186 v2.9.187 v2.9.188; do
+            rid=$(gh api repos/$GH_REPO/releases/tags/$tag --jq .id)
+            gh api --method PATCH repos/$GH_REPO/releases/$rid -F prerelease=true -f make_latest=false > /dev/null
+          done
+          rid=$(gh api repos/$GH_REPO/releases/tags/v2.9.185 --jq .id)
+          gh api --method PATCH repos/$GH_REPO/releases/$rid -F prerelease=false -f make_latest=true > /dev/null
+          test "$(gh api repos/$GH_REPO/releases/latest --jq .tag_name)" = v2.9.185
+          for tag in v2.9.186 v2.9.187 v2.9.188; do
+            test "$(gh api repos/$GH_REPO/releases/tags/$tag --jq .prerelease)" = true
+          done
+          echo 'Restored original v2.9.185 installer and stable update channel'
