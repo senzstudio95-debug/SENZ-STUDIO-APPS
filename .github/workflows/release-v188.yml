@@ -1,0 +1,134 @@
+name: Build and publish v2.9.188 SENZ TUBE
+on:
+  push:
+    branches: [main]
+    paths: [apps/senz-tube/**, release-tools/v188/**, .github/workflows/release-v188.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: release-v2.9.188
+  cancel-in-progress: true
+jobs:
+  windows-test:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install media test tool
+        run: choco install ffmpeg -y --no-progress
+      - name: Build and test Windows app
+        shell: bash
+        run: |
+          export PATH="/c/ProgramData/chocolatey/bin:$PATH"
+          cd apps/senz-tube
+          npm ci
+          npm run build
+          npm test
+          node electron.test.cjs
+          SENZ_PRE_READY_TEST=1 node electron.test.cjs
+      - name: Test full Studio startup and second launch
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          gh release download v2.9.187 --pattern SENZ-STUDIO-UPDATE-v2.9.187.exe
+          7z x -y SENZ-STUDIO-UPDATE-v2.9.187.exe -ostudio-base
+          python release-tools/v188/patch-startup.py 'studio-base/$PLUGINSDIR/payload/resources/app'
+          cp apps/senz-tube/tube-main.cjs 'studio-base/$PLUGINSDIR/payload/resources/app/tube/tube-main.cjs'
+          rm 'studio-base/$PLUGINSDIR/payload/resources/app/tube/adblock.cjs'
+          node release-tools/v188/studio-startup.test.cjs 'studio-base/$PLUGINSDIR/payload/resources/app'
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: tube-windows-check
+          path: apps/senz-tube/ui-artifacts/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tube-test-media
+          path: apps/senz-tube/fixture.webm
+  release:
+    needs: windows-test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check release base
+        run: test "$(gh api repos/$GH_REPO/releases/latest --jq .tag_name)" = v2.9.187
+      - name: Install installer tools
+        timeout-minutes: 4
+        run: |
+          sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 update -qq
+          sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 install -y nsis p7zip-full xvfb libgtk-3-0 libnss3 libasound2t64
+          pip install cairosvg pillow
+      - name: Download verified base
+        timeout-minutes: 4
+        run: |
+          gh release download v2.9.187 --pattern SENZ-STUDIO-UPDATE-v2.9.187.exe
+      - name: Build React shell
+        run: |
+          cd apps/senz-tube
+          npm ci
+          npm run build
+          npm test
+      - name: Prepare app
+        timeout-minutes: 3
+        run: python3 release-tools/v188/prepare.py
+      - name: Install browser test tools
+        timeout-minutes: 5
+        run: |
+          npm install --no-save --ignore-scripts --fetch-timeout=60000 --fetch-retries=1 playwright
+          npx playwright install chromium
+      - uses: actions/download-artifact@v4
+        with:
+          name: tube-test-media
+          path: apps/senz-tube
+      - name: Test real canvas interactions
+        run: |
+          node release-tools/v179/layout.test.mjs
+          node release-tools/v182/dense.test.mjs
+          node --test release-tools/v179/download.test.cjs
+          node release-tools/v186/ui-test.cjs
+          node --test release-tools/v186/display.test.cjs
+          xvfb-run -a node apps/senz-tube/electron.test.cjs
+          SENZ_PRE_READY_TEST=1 xvfb-run -a node apps/senz-tube/electron.test.cjs
+      - name: Preserve interaction screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: canvas-interaction-check
+          path: ui-artifacts/
+          retention-days: 14
+      - name: Package and verify all files
+        run: |
+          SENZ_APP="$PWD/payload/resources/app" node --test release-tools/demo.test.cjs
+          python3 release-tools/v188/package.py
+      - name: Upload and publish verified installer
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GH_REPO/releases/latest --jq .tag_name)" = v2.9.187
+          gh release create v2.9.188 SENZ-STUDIO-UPDATE-v2.9.188.exe SENZ-TUBE-Setup-v1.0.3.exe SHA256SUMS.txt --draft --target "$GITHUB_SHA" --title 'SENZ STUDIO v2.9.188 - Startup Recovery - No Ad Blocker' --notes-file release-tools/v188/NOTES.md
+          rid=$(gh api repos/$GH_REPO/releases --jq '.[] | select(.tag_name=="v2.9.188" and .draft==true) | .id')
+          test -n "$rid"
+          gh api repos/$GH_REPO/releases/$rid > draft188.json
+          node <<'JS'
+          const fs=require('fs'),path=require('path'),crypto=require('crypto');
+          const d=JSON.parse(fs.readFileSync('draft188.json')),name='SENZ-STUDIO-UPDATE-v2.9.188.exe';
+          const a=d.assets.find(a=>a.name===name),file=fs.readFileSync(name),sha=crypto.createHash('sha256').update(file).digest('hex');
+          if(!a||a.size!==file.length||a.digest!=='sha256:'+sha)throw Error('Uploaded installer mismatch');
+          const tn='SENZ-TUBE-Setup-v1.0.3.exe',ta=d.assets.find(a=>a.name===tn),tf=fs.readFileSync(tn);if(!ta||ta.size!==tf.length||ta.digest!=='sha256:'+crypto.createHash('sha256').update(tf).digest('hex'))throw Error('Tube installer mismatch');
+          for(const a of d.assets)a.browser_download_url=`https://github.com/${process.env.GH_REPO}/releases/download/${d.tag_name}/${a.name}`;
+          if(!require(path.resolve('payload/resources/app/update-core.cjs')).release({...d,draft:false},process.env.GH_REPO,'2.9.187'))throw Error('Updater rejected metadata');
+          JS
+          gh api --method PATCH repos/$GH_REPO/releases/$rid -F draft=false -f make_latest=true > published188.json
+          test "$(gh api repos/$GH_REPO/releases/latest --jq .tag_name)" = v2.9.188
+          node <<'JS'
+          const fs=require('fs'),path=require('path'),d=JSON.parse(fs.readFileSync('published188.json'));
+          if(!require(path.resolve('payload/resources/app/update-core.cjs')).release(d,process.env.GH_REPO,'2.9.187'))throw Error('Published metadata rejected');
+          JS
+

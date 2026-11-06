@@ -3,7 +3,7 @@ assert.equal(electron.app.isReady(),false,'Regression fixture must install befor
 electron.app.setPath('userData',process.env.SENZ_TUBE_PROFILE);
 const tube=require('./tube-main.cjs').install({electron,integrated:true});
 assert.equal(electron.app.isReady(),false);
-assert.deepEqual(tube.inspect().state('main').adblock,{enabled:true,blocked:0});
+assert.equal('adblock' in tube.inspect().state('main'),false);
 global.__tube=tube;
 electron.app.on('window-all-closed',()=>electron.app.quit());
 void tube.open();

@@ -1,8 +1,5 @@
 name: Build and publish v2.9.187 SENZ TUBE
 on:
-  push:
-    branches: [main]
-    paths: [apps/senz-tube/**, release-tools/v187/**, .github/workflows/release-v187.yml]
   workflow_dispatch:
 permissions:
   contents: write

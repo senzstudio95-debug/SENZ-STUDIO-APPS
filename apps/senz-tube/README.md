@@ -7,4 +7,3 @@ Google sign-in is external. Embedded-browser sign-in is unsupported by Google; s
 
 Press Ctrl+Alt+Shift+T or use the tray menu to restore a click-through Mini Player. Closing Mini Player returns the live web contents to its original tab. Settings checks GitHub releases for an exact SENZ-TUBE-Setup versioned installer; download and install requires an explicit click. Bundled copies update through Studio.
 
-Ad Blocker defaults on in the dedicated YouTube session. It blocks known advertising/tracking endpoints, hides ad slots and skips recognized player ads. Some server-inserted ads may remain. Disable it in Settings and reload if playback is affected.
