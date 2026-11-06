@@ -35,7 +35,7 @@ jobs:
         timeout-minutes: 5
         run: |
           npm install --no-save --ignore-scripts --fetch-timeout=60000 --fetch-retries=1 playwright
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
       - name: Test real canvas interactions
         run: |
           node release-tools/v178/layout.test.mjs
