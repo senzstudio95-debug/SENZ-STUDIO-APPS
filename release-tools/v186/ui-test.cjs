@@ -263,9 +263,8 @@ async function checkNameEmojiBoxes(p,assert){
 }
 
 async function displayChecks(p){
- const original=await p.evaluate(()=>JSON.stringify(__senzTest.editor.project));
  for(const [width,height] of [[3840,2160],[2560,1440],[1920,1080],[1280,720]]){
-  await p.setViewportSize({width,height});await p.waitForTimeout(500);
+  const original=await p.evaluate(()=>JSON.stringify(__senzTest.editor.project));await p.setViewportSize({width,height});await p.waitForTimeout(500);
   const report=await p.evaluate(async()=>{const strip=document.querySelector('.asset-dock .font-strip'),dock=document.querySelector('.asset-dock');const frames=[];for(let i=0;i<80;i++){await new Promise(requestAnimationFrame);const c=strip.querySelector('.font-card'),r=dock.getBoundingClientRect();frames.push([r.y,r.height,strip.offsetHeight,c?.getBoundingClientRect().height||0,getComputedStyle(strip).getPropertyValue('--asset-scale')].join('|'));}return {unique:new Set(frames).size,project:JSON.stringify(__senzTest.editor.project),scrollWidth:document.documentElement.scrollWidth,innerWidth};});
   assert.equal(report.unique,1,'Quick Font stays stationary at '+width);assert.equal(report.project,original,'Display fit preserves artwork');assert.ok(report.scrollWidth<=report.innerWidth+1,'No viewport overflow');
   await p.evaluate(()=>__senzTest.actions['auto-arrange']());await p.waitForTimeout(120);const rect=await p.locator('.auto-arrange-window').boundingBox();assert.ok(rect.width<=822&&rect.height<=height*.89,'Compact arrange fits '+width);const apply=await p.locator('[data-aa="apply"]').boundingBox();assert.ok(apply.y>=rect.y&&apply.y+apply.height<=rect.y+rect.height+1,'Apply stays inside dialog');
