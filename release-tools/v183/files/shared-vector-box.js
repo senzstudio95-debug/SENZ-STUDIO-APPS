@@ -26,7 +26,8 @@ export function updateVectorBox(editor,properties){
  if(textBatch(editor)){
   // A batch of names is a batch of individual frames, never one canvas-wide frame.
   if('frameEnabled' in properties){
-   for(const o of objects){const old=editor.page.objects.find(b=>b.vectorBoxContainer&&b.vectorBoxGroup===o.vectorBoxGroup);if(old){o.frameColor ||= old.color||'#000000';for(const k of ['frameGapX','frameGapY','frameThickness'])o[k]=old[k];}delete o.vectorBoxGroup;}
+   const boxes=new Map(editor.page.objects.filter(b=>b.vectorBoxContainer).map(b=>[b.vectorBoxGroup,b]));
+   for(const o of objects){const old=boxes.get(o.vectorBoxGroup);if(old){o.frameColor ||= old.color||'#000000';for(const k of ['frameGapX','frameGapY','frameThickness'])o[k]=old[k];}delete o.vectorBoxGroup;}
    const live=new Set(editor.page.objects.filter(o=>!o.vectorBoxContainer&&o.vectorBoxGroup).map(o=>o.vectorBoxGroup));
    editor.page.objects=editor.page.objects.filter(o=>!o.vectorBoxContainer||live.has(o.vectorBoxGroup));
    const ids=new Set(editor.page.objects.map(o=>o.id));editor.selection=editor.selection.filter(id=>ids.has(id));
