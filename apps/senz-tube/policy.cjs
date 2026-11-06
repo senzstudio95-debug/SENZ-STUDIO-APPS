@@ -1,4 +1,4 @@
-const REPO='senzstudio95-debug/SENZ-STUDIO-APPS',VERSION='1.0.0';
+const REPO='senzstudio95-debug/SENZ-STUDIO-APPS',VERSION='1.0.1';
 const testURL=u=>process.env.SENZ_TUBE_TEST==='1'&&u.protocol==='http:'&&u.hostname==='127.0.0.1';
 function youtube(raw){try{const u=new URL(raw);return !u.username&&!u.password&&(u.protocol==='https:'&&['youtube.com','www.youtube.com','m.youtube.com','music.youtube.com','youtu.be'].includes(u.hostname)||testURL(u));}catch{return false;}}
 function account(raw){try{const u=new URL(raw);return u.protocol==='https:'&&['accounts.google.com','myaccount.google.com','consent.google.com','consent.youtube.com'].includes(u.hostname)&&!u.username&&!u.password;}catch{return false;}}
