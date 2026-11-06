@@ -1,0 +1,79 @@
+name: Build and publish v2.9.184 canvas tools
+on:
+  push:
+    branches: [main]
+    paths: [release-tools/v184/**, .github/workflows/release-v184.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: release-v2.9.184
+  cancel-in-progress: true
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check release base
+        run: test "$(gh api repos/$GH_REPO/releases/latest --jq .tag_name)" = v2.9.183
+      - name: Install installer tools
+        timeout-minutes: 4
+        run: |
+          sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 update -qq
+          sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 install -y nsis p7zip-full
+      - name: Download verified base
+        timeout-minutes: 4
+        run: gh release download v2.9.183 --pattern SENZ-STUDIO-UPDATE-v2.9.183.exe
+      - name: Prepare app
+        timeout-minutes: 3
+        run: python3 release-tools/v184/prepare.py
+      - name: Install browser test tools
+        timeout-minutes: 5
+        run: |
+          npm install --no-save --ignore-scripts --fetch-timeout=60000 --fetch-retries=1 playwright
+          npx playwright install chromium
+      - name: Test real canvas interactions
+        run: |
+          node release-tools/v179/layout.test.mjs
+          node release-tools/v182/dense.test.mjs
+          node --test release-tools/v179/download.test.cjs
+          node release-tools/v184/ui-test.cjs
+      - name: Preserve interaction screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: canvas-interaction-check
+          path: ui-artifacts/
+          retention-days: 14
+      - name: Package and verify all files
+        run: |
+          SENZ_APP="$PWD/payload/resources/app" node --test release-tools/demo.test.cjs
+          python3 release-tools/v184/package.py
+      - name: Upload and publish verified installer
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GH_REPO/releases/latest --jq .tag_name)" = v2.9.183
+          gh release create v2.9.184 SENZ-STUDIO-UPDATE-v2.9.184.exe SHA256SUMS.txt --draft --target "$GITHUB_SHA" --title 'SENZ STUDIO v2.9.184 - One Vector Box per Name and Emoji' --notes-file release-tools/v184/NOTES.md
+          rid=$(gh api repos/$GH_REPO/releases --jq '.[] | select(.tag_name=="v2.9.184" and .draft==true) | .id')
+          test -n "$rid"
+          gh api repos/$GH_REPO/releases/$rid > draft184.json
+          node <<'JS'
+          const fs=require('fs'),path=require('path'),crypto=require('crypto');
+          const d=JSON.parse(fs.readFileSync('draft184.json')),name='SENZ-STUDIO-UPDATE-v2.9.184.exe';
+          const a=d.assets.find(a=>a.name===name),file=fs.readFileSync(name),sha=crypto.createHash('sha256').update(file).digest('hex');
+          if(!a||a.size!==file.length||a.digest!=='sha256:'+sha)throw Error('Uploaded installer mismatch');
+          for(const a of d.assets)a.browser_download_url=`https://github.com/${process.env.GH_REPO}/releases/download/${d.tag_name}/${a.name}`;
+          if(!require(path.resolve('payload/resources/app/update-core.cjs')).release({...d,draft:false},process.env.GH_REPO,'2.9.183'))throw Error('Updater rejected metadata');
+          JS
+          gh api --method PATCH repos/$GH_REPO/releases/$rid -F draft=false -f make_latest=true > published184.json
+          test "$(gh api repos/$GH_REPO/releases/latest --jq .tag_name)" = v2.9.184
+          node <<'JS'
+          const fs=require('fs'),path=require('path'),d=JSON.parse(fs.readFileSync('published184.json'));
+          if(!require(path.resolve('payload/resources/app/update-core.cjs')).release(d,process.env.GH_REPO,'2.9.183'))throw Error('Published metadata rejected');
+          JS
+
