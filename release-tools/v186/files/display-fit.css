@@ -27,3 +27,14 @@
  .toolrail .tool{width:68px;height:68px;max-height:72px}.toolrail .rail-art{width:36px;height:36px}.toolrail .rail-art svg{width:32px!important;height:32px!important}
  .asset-tabs button,.asset-footer button{font-size:14px!important}.asset-search{width:280px;height:34px}.asset-search input{font-size:14px}
 }
+.auto-arrange-window[open]{display:flex;flex-direction:column;height:min(660px,88dvh)}
+.auto-arrange-window .aa-header{flex:0 0 auto}
+.auto-arrange-window .aa-body{flex:1 1 0;height:0;min-height:0;max-height:none!important;grid-template-rows:minmax(0,1fr)}
+.auto-arrange-window .aa-settings{height:100%;min-height:0;overflow-y:auto}
+.auto-arrange-window .aa-result{height:100%;min-height:0;overflow:hidden}
+.auto-arrange-window .aa-preview{flex:1 1 0;min-height:80px!important}
+.auto-arrange-window .aa-preview-heading,.auto-arrange-window .aa-result footer{flex:0 0 auto}
+.auto-arrange-window .aa-status{flex:0 0 auto;max-height:70px;overflow-y:auto}
+@media(max-width:700px){.auto-arrange-window .aa-body{display:flex;flex-direction:column;overflow-y:auto}.auto-arrange-window .aa-settings{height:auto;max-height:300px;flex:none}.auto-arrange-window .aa-result{height:auto;min-height:260px;flex:none}.auto-arrange-window .aa-preview{height:160px;flex:none}}
+@media(min-width:2200px) and (min-height:1000px){.right-panel .name-panel{flex:0 0 auto!important}.right-panel .name-editor-wrap{flex:0 0 140px;max-height:180px}}
+@media(min-width:3000px) and (min-height:1600px){.right-panel .name-editor-wrap{flex-basis:180px}}
