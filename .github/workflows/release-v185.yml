@@ -50,7 +50,9 @@ jobs:
           pip install cairosvg pillow
       - name: Download verified base
         timeout-minutes: 4
-        run: gh release download v2.9.184 --pattern SENZ-STUDIO-UPDATE-v2.9.184.exe
+        run: |
+          gh release download v2.9.184 --pattern SENZ-STUDIO-UPDATE-v2.9.184.exe
+          gh release download v44.10.2 --repo electron/electron --pattern electron-v44.10.2-win32-x64.zip
       - name: Build React shell
         run: |
           cd apps/senz-tube

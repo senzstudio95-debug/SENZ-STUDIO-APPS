@@ -4,6 +4,7 @@ SENZ TUBE v1.0.0 + SENZ STUDIO v2.9.185
 - Same-video floating Mini Player, native drag/resize, pin on top, opacity, click-through, playback and volume controls.
 - Ctrl+Alt+Shift+T or tray menu restores mouse input and opacity.
 - GitHub update checking and SHA-256 verified installer downloads.
+- Electron runtime updated to patched 44.10.2 in both apps.
 - SENZ TUBE icon and launcher added to Studio. Existing canvas features preserved.
 
 Google blocks embedded-browser sign-in. Google login opens in the default browser; that login session is NOT transferred into SENZ TUBE. Account-only YouTube features may require Open in Browser. Exclusive fullscreen games can cover pinned windows.
