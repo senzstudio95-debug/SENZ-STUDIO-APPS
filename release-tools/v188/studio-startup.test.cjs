@@ -5,7 +5,9 @@ const fixture=path.join(temp,'main.cjs'),errors=path.join(temp,'errors.txt');
 fs.writeFileSync(fixture,`const e=require('electron'),fs=require('fs');e.app.setPath('userData',${JSON.stringify(path.join(temp,'profile'))});e.dialog.showErrorBox=(title,message)=>{fs.appendFileSync(${JSON.stringify(errors)},title+'\\n'+message+'\\n');e.app.exit(91);};require(${JSON.stringify(path.join(appDir,'bootstrap.cjs'))});`);
 (async()=>{let app;try{
  app=await _electron.launch({executablePath:require('../../apps/senz-tube/node_modules/electron'),args:['--no-sandbox',fixture],timeout:60000});
+ app.process().stdout?.on('data',d=>process.stdout.write(d));app.process().stderr?.on('data',d=>process.stderr.write(d));
  let editor;for(let i=0;i<120;i++){editor=app.windows().find(w=>w.url().startsWith('senz://app/index.html'));if(editor)break;if(fs.existsSync(errors))throw Error(fs.readFileSync(errors,'utf8'));await new Promise(r=>setTimeout(r,500));}
+ if(!editor){console.log('Window URLs',app.windows().map(w=>w.url()));console.log('Native windows',await app.evaluate(({app,BrowserWindow})=>({ready:app.isReady(),argv:process.argv,windows:BrowserWindow.getAllWindows().map(w=>({url:w.webContents.getURL(),visible:w.isVisible(),title:w.getTitle()}))})));fs.mkdirSync('apps/senz-tube/ui-artifacts',{recursive:true});let i=0;for(const w of app.windows())await w.screenshot({path:'apps/senz-tube/ui-artifacts/studio-failure-'+i+++'.png'}).catch(()=>{});}
  assert.ok(editor,'Full Studio editor window opened');
  await editor.waitForFunction(()=>document.readyState==='complete'&&!!document.querySelector('canvas'),{timeout:60000});
  for(let i=0;i<60;i++){if(await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().some(w=>w.webContents.getURL().startsWith('senz://app/index.html')&&w.isVisible())))break;await new Promise(r=>setTimeout(r,250));}
