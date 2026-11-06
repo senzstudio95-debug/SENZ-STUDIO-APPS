@@ -80,7 +80,7 @@ jobs:
           node release-tools/v179/layout.test.mjs
           node release-tools/v182/dense.test.mjs
           node --test release-tools/v179/download.test.cjs
-          node release-tools/v184/ui-test.cjs
+          node release-tools/v185/ui-test.cjs
           xvfb-run -a node apps/senz-tube/electron.test.cjs
       - name: Preserve interaction screenshots
         if: always()
