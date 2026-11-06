@@ -31,9 +31,13 @@ jobs:
         with:
           name: tube-windows-check
           path: apps/senz-tube/ui-artifacts/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: tube-test-media
+          path: apps/senz-tube/fixture.webm
   release:
     needs: windows-test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       GH_TOKEN: ${{ github.token }}
@@ -46,7 +50,7 @@ jobs:
         timeout-minutes: 4
         run: |
           sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 update -qq
-          sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 install -y nsis p7zip-full ffmpeg xvfb libgtk-3-0 libnss3 libasound2t64
+          sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 install -y nsis p7zip-full xvfb libgtk-3-0 libnss3 libasound2t64
           pip install cairosvg pillow
       - name: Download verified base
         timeout-minutes: 4
@@ -67,6 +71,10 @@ jobs:
         run: |
           npm install --no-save --ignore-scripts --fetch-timeout=60000 --fetch-retries=1 playwright
           npx playwright install chromium
+      - uses: actions/download-artifact@v4
+        with:
+          name: tube-test-media
+          path: apps/senz-tube
       - name: Test real canvas interactions
         run: |
           node release-tools/v179/layout.test.mjs
