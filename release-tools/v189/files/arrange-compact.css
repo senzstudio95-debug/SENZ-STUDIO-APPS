@@ -1,0 +1,31 @@
+/* Stable Quick Font geometry: scrollbar and hover never change card fitting. */
+.asset-dock .font-strip{overflow-x:scroll!important;overflow-y:hidden!important;scrollbar-width:thin!important;overscroll-behavior:contain;overflow-anchor:none;contain:layout}
+.asset-dock .font-strip::-webkit-scrollbar{display:block!important;height:10px}
+.asset-dock .font-strip::-webkit-scrollbar-thumb{background:#8293ad88;border-radius:5px}
+.asset-dock .font-strip .font-card,.asset-dock .font-strip .font-card:hover{transform:none!important;transition:background-color .15s,border-color .15s!important;animation:none!important}
+.asset-dock .font-card:after{display:none!important}
+/* Auto Arrange only: compact by default, freely resizable with bounded content. */
+.auto-arrange-window{box-sizing:border-box;width:min(820px,calc(100vw - 24px));height:min(640px,calc(100dvh - 24px));max-width:calc(100vw - 16px);max-height:calc(100dvh - 16px);min-width:min(560px,calc(100vw - 16px));min-height:min(360px,calc(100dvh - 16px));overflow:hidden;border-radius:14px;font-size:12px;container-type:inline-size}
+.auto-arrange-window[open]{display:flex;flex-direction:column}
+.auto-arrange-window .aa-header{flex:none;padding:11px 15px;gap:10px}
+.auto-arrange-window .aa-header h2{font-size:21px}
+.auto-arrange-window .aa-header p{font-size:11px;margin:3px 0}
+.auto-arrange-window .aa-logo{font-size:30px}
+.auto-arrange-window .aa-body{flex:1 1 0;height:0;min-height:0;display:grid;grid-template-columns:minmax(240px,300px) minmax(0,1fr);grid-template-rows:minmax(0,1fr);padding:12px 12px 20px;gap:12px}
+.auto-arrange-window .aa-settings{height:100%;min-height:0;display:flex;flex-direction:column;gap:8px;overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding-right:5px}
+.auto-arrange-window fieldset{flex:none;padding:8px;border-radius:9px}
+.auto-arrange-window label{gap:3px;margin-bottom:6px}
+.auto-arrange-window input,.auto-arrange-window select{padding:6px}
+.auto-arrange-window button{padding:7px 8px}
+.auto-arrange-window .aa-settings small{font-size:10px;line-height:1.4}
+.auto-arrange-window .aa-colors{max-height:100px}
+.auto-arrange-window .aa-colors button{font-size:10px}
+.auto-arrange-window .aa-result{height:100%;min-height:0;gap:8px;overflow:hidden}
+.auto-arrange-window .aa-preview{flex:1 1 0;min-height:60px;padding:12px}
+.auto-arrange-window .aa-preview svg{max-height:100%;object-fit:contain}
+.auto-arrange-window .aa-preview-heading,.auto-arrange-window .aa-result footer{flex:none}
+.auto-arrange-window .aa-result footer{flex-wrap:wrap;gap:5px}
+.auto-arrange-window .aa-status{flex:none;max-height:65px;overflow-y:auto;font-size:11px;padding:8px;min-height:30px}
+.auto-arrange-window .aa-window-resize{position:absolute;right:2px;bottom:2px;width:22px;height:20px;padding:0;border:0;border-radius:4px;background:repeating-linear-gradient(135deg,transparent 0 4px,#b9a1dc 4px 6px);clip-path:polygon(100% 0,100% 100%,0 100%);cursor:nwse-resize;touch-action:none}
+.auto-arrange-window .aa-window-resize:focus-visible{outline:2px solid #d0a4ff;clip-path:none}
+@container(max-width:650px){.auto-arrange-window .aa-body{grid-template-columns:minmax(210px,1fr) minmax(0,1fr);gap:8px;padding:8px 8px 20px}.auto-arrange-window .aa-header p{display:none}.auto-arrange-window .aa-modes{flex-wrap:wrap}.auto-arrange-window .aa-preview-heading{flex-wrap:wrap}.auto-arrange-window .aa-result footer button{font-size:11px;padding:5px}.auto-arrange-window .aa-status{max-height:50px}}
