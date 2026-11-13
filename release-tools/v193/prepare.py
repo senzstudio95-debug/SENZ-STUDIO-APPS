@@ -19,6 +19,7 @@ patch('dist/emoji-vector.js','JSON.stringify([o.emojiResolved','JSON.stringify([
 patch('dist/emoji-vector.js',' const pad=Math.max',' if(o.readerSymbolLayout)maxWidth=readerSymbolLayout(lines,ctx,o);\n const pad=Math.max')
 patch('dist/emoji-vector.js',' const result={lines,w:', ' if(o.readerSymbolLayout)for(const l of lines)for(const p of l.parts)if(p.logo){p.logoScale=p.px/Math.max(p.logo.width,p.logo.height);p.logoX=p.x+(p.px-p.logo.width*p.logoScale)/2;p.logoY=p.y+p.symbolTop+(p.px-p.logo.height*p.logoScale)/2;}\n const result={lines,w:')
 patch('dist/vector-cache.js','JSON.stringify([!!o.emojiVector','JSON.stringify([!!o.readerSymbolLayout,!!o.emojiVector')
+patch('dist/editor.js',"if(o.type!=='text'||!!o.emojiVector===!!this.project.emojiVectorMode)continue;", "if(o.type!=='text'||o.readerSymbolLayout||!!o.emojiVector===!!this.project.emojiVectorMode)continue;")
 for name in ['package.json','dist/app.js','dist/index.html']:
  p=app/name;s=p.read_text(encoding='utf-8');assert '2.9.192' in s;write(p,s.replace('2.9.192','2.9.193'));names.append(name)
 p=app/'SOURCE-SHA256.json';d=json.loads(p.read_text());d['version']='2.9.193'
@@ -28,5 +29,4 @@ after={p.relative_to(root).as_posix():digest(p) for p in root.rglob('*') if p.is
 assert set(before)<=set(after)
 assert {n for n in after if before.get(n)!=after[n]}<={'resources/app/'+n for n in names+['SOURCE-SHA256.json']}
 assert all(after[n]==sha for n,sha in before.items() if n.startswith('resources/app/tube/'))
-print((app/'dist/emoji-vector.js').read_text(encoding='utf-8'))
 Path('payload193.json').write_text(json.dumps(after));print('SENZREADER integrated; all unrelated files unchanged')
