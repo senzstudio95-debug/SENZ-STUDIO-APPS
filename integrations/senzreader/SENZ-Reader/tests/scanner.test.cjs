@@ -1,0 +1,17 @@
+const assert=require('node:assert/strict'),fs=require('node:fs'),vm=require('node:vm');
+const make=(text,attrs={})=>({innerText:text,children:[],parentElement:null,getBoundingClientRect:()=>({width:100,height:40}),getAttribute:k=>attrs[k]||null,hasAttribute:k=>k in attrs,contains:()=>false});
+const product=make('Sticker Nama Custom Rainbow Laser');const card=make('Sticker Nama Custom Rainbow Laser\nBuyer note: Senz\nFont: A1\nSize: 20 cm',{'data-order-id':'123456789'});product.parentElement=card;card.children=[product];card.contains=e=>e===product;
+const body=make(card.innerText);card.parentElement=body;
+const context={document:{body,title:'Orders',querySelectorAll:s=>s.startsWith('[data-order-id]')?[card]:[product,card]},getComputedStyle:()=>({visibility:'visible',display:'block'}),location:{href:'https://example.test/orders'}};
+vm.createContext(context);vm.runInContext(fs.readFileSync(__dirname+'/../scanner.js','utf8'),context);
+let result=context.scanVisiblePage('Stiker nama rainbow laser');assert.equal(result.blocks.length,1);assert.match(result.blocks[0],/Order ID: 123456789/);assert.equal(result.diagnostics.productOnPage,true);
+context.document.querySelectorAll=s=>s.startsWith('[data-order-id]')?[]:[product,card];result=context.scanVisiblePage('Stiker nama rainbow laser');assert.equal(result.blocks.length,1);
+console.log('Scanner tests passed: DOM card scan, data-order-id, generic product anchor, source URL and matching');
+const title=make('Stiker nama rainbow laser'),variant=make('Stiker nama rainbow laser\nA8, 5INCH X 2INCH (MOTO KERETA)\n× 1\nAffiliate creator');
+title.parentElement=variant;variant.children=[title];variant.parentElement=body;variant.contains=e=>e===title;body.innerText=variant.innerText;
+context.document.querySelectorAll=s=>s.startsWith('[data-order-id]')?[]:[title,variant];
+result=context.scanVisiblePage('Stiker nama rainbow laser');assert.equal(result.blocks.length,1);assert.match(result.blocks[0],/A8, 5INCH X 2INCH/);assert.match(result.blocks[0],/× 1/);
+console.log('2.0.2 scanner test passed: unlabeled TikTok product variation card');
+const order=make(variant.innerText+'\nCustomer message: bunian Wulan');order.children=[variant];order.parentElement=body;variant.parentElement=order;order.querySelectorAll=()=>[title,variant];order.contains=e=>e===title||e===variant;body.innerText=order.innerText;
+result=context.scanVisiblePage('Stiker nama rainbow laser');assert.match(result.blocks[0],/Customer message: bunian Wulan/);
+console.log('2.0.3 scanner test passed: sibling Customer message captured');

@@ -1,0 +1,18 @@
+const assert=require('node:assert/strict'),{EventEmitter}=require('node:events'),fs=require('node:fs'),vm=require('node:vm');
+const bridge=require('../files/reader-bridge.cjs'),ext=require('../../SENZ-Reader/studio-bridge.js');
+(async()=>{
+assert.equal(ext.widthIn('8INCH X 2INCH'),8);assert.equal(ext.widthIn('25.4 mm x 5 mm'),1);assert.equal(ext.widthIn('2.54 x 1 cm'),1);assert.throws(()=>ext.widthIn('8 x 2'));assert.throws(()=>ext.widthIn('0 inch'));
+const items=await ext.buildItems([{order_id:'123456789',product_name:'Sticker',custom_name:'bunian Wulan',font_family:'Test Script',size:'8INCH X 2INCH',preview_color:'#80caff',quantity:2}]);assert.equal(bridge.validItems(items),true);assert.equal(bridge.validItems([{...items[0],quantity:501}]),false);
+const incomplete=await ext.buildItems([{order_id:'empty-order',product_name:'Sticker',custom_name:'',font_family:'',font:'',size:'',preview_color:null,quantity:1}]);assert.equal(incomplete[0].widthIn,null);assert.equal(incomplete[0].color,null);assert.equal(bridge.validItems(incomplete),true);
+const jobs=new Map(),token='a'.repeat(64),handler=bridge.makeHandler(token,jobs);
+function request(method,url,body,headers={}){let code,result;const req=new EventEmitter();Object.assign(req,{method,url,headers:{host:'127.0.0.1:47831','x-senz-token':token,...headers}});const res={setHeader(){},writeHead(c){code=c;return this;},end(v){result=v?JSON.parse(v):null;}};handler(req,res);if(body){req.emit('data',Buffer.from(JSON.stringify(body)));req.emit('end');}return {code,result};}
+assert.equal(request('GET','/health',null,{'x-senz-token':'bad'}).code,401);assert.equal(request('GET','/health',null,{origin:'https://evil.test'}).code,403);assert.equal(request('GET','/health',null,{host:'evil.test:47831'}).code,403);assert.equal(request('GET','/health').result.service,'senz-reader-bridge');
+const payload={requestId:'fixture-request-123',items};assert.equal(request('POST','/orders',payload).code,202);assert.equal(request('POST','/orders',payload).code,200);assert.equal(jobs.size,1);assert.equal(request('GET','/status/fixture-request-123').result.status,'queued');
+// Run the actual importer function from the Studio adapter against a canvas fixture.
+const src=fs.readFileSync(__dirname+'/../files/studio-orders.js','utf8');const a=src.indexOf(' const prepared=new Map()'),b=src.indexOf('\n async function finishJobs',a);const page={objects:[]},project={pages:[page]};let next=0;
+const context={setTimeout,$:()=>({textContent:''}),displayName:r=>r.name,loadFont:async()=>{},editor:{page,project,applyChange:f=>f(),select(){},fit(){}},fonts:()=>[{family:'Test Script'}],ensureFont:async()=>{},toast(){},makeText:(name,x,y,opts)=>({id:++next,name,x,y,...opts}),sizedText:async(o,width)=>({...o,w:width*96,h:30})};vm.createContext(context);vm.runInContext(src.slice(a,b)+'\nglobalThis.runImport=importItems;',context);
+await assert.rejects(()=>context.runImport(incomplete),/A name is required/);assert.equal(page.objects.length,0);
+const count=await context.runImport(items);assert.equal(count,2);assert.equal(page.objects[0].name,'bunian Wulan');assert.equal(page.objects[0].font,'Test Script');assert.equal(page.objects[0].w,768);assert.equal(page.objects[1].tiktokCopy,2);await assert.rejects(()=>context.runImport(items),/already in/);
+jobs.get(payload.requestId).status='imported';jobs.get(payload.requestId).count=count;assert.equal(request('GET','/status/'+payload.requestId).result.count,2);
+console.log('Bridge tests passed: units, input limits, auth, origin/host rejection, retry dedupe, actual importer fixture, font/name/quantity/width, canvas duplicate protection, status acknowledgement.');
+})().catch(e=>{console.error(e);process.exit(1);});

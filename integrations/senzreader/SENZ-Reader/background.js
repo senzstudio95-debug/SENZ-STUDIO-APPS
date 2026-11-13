@@ -1,0 +1,7 @@
+importScripts('studio-bridge.js');
+let sending=false;
+chrome.runtime.onMessage.addListener((message,sender,reply)=>{
+ if(sender.id!==chrome.runtime.id||message.type!=='senz-send')return;
+ if(sending){reply({ok:false,error:'Sending is in progress. Wait for the result before trying again.'});return;}sending=true;
+ (async()=>{try{const d=await chrome.storage.local.get('studioToken');if(!d.studioToken)throw Error('Connect SENZ Studio first.');let result;try{result=await StudioBridge.send(d.studioToken,message.orders,()=>{});}catch(e){if(!e.message.includes('Pairing code'))throw e;let defaults;try{const r=await fetch('bridge-defaults.json');defaults=await r.json();}catch{}if(!defaults?.token||defaults.token===d.studioToken)throw e;result=await StudioBridge.send(defaults.token,message.orders,()=>{});await chrome.storage.local.set({studioToken:defaults.token});}const text=result.status==='awaiting_review'?'Orders received in SENZREADER. Press ADD TO CANVAS in Studio.':result.status==='imported'?result.count+' names added to canvas.':'Receiver accepted the orders, but the review window has not confirmed yet. Open Studio → SENZREADER; do not send repeatedly.';const response={ok:true,message:text,result};await chrome.storage.local.set({lastStudioSend:{...response,time:Date.now()}});reply(response);}catch(e){const response={ok:false,error:e.message};await chrome.storage.local.set({lastStudioSend:{...response,time:Date.now()}});reply(response);}finally{sending=false;}})();return true;
+});

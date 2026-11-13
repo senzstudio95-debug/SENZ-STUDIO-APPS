@@ -1,0 +1,24 @@
+{
+  "manifest_version": 3,
+  "name": "SENZ Order Reader",
+  "version": "2.9.8",
+  "description": "Scan matching products on the open orders page, review customer names, fonts, sizes, colors and quantities, and send to SENZ Studio.",
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "action": {
+    "default_title": "SENZ Order Reader",
+    "default_popup": "reader.html"
+  },
+  "icons": {
+    "128": "icon.png"
+  },
+  "host_permissions": [
+    "http://127.0.0.1/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  }
+}
