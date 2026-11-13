@@ -1,0 +1,1 @@
+Replaced the revolving/two-hearts symbol (💕 💞) with the supplied two-heart artwork: large heart at lower left, small heart at upper right, without curved lines. Vector contours follow the supplied reference. Based on v2.9.193, retaining its symbol placement and sizing; v2.9.194 placement changes are not included.
