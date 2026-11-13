@@ -17,7 +17,7 @@ patch('dist/studio-orders.js',"emojiVector:true}),item.widthIn", "emojiVector:tr
 patch('dist/emoji-vector.js',"import {LOGOS}","import {readerSymbolLayout} from './reader-symbol-layout.js';\nimport {LOGOS}")
 patch('dist/emoji-vector.js','JSON.stringify([o.emojiResolved','JSON.stringify([!!o.readerSymbolLayout,o.emojiResolved')
 patch('dist/emoji-vector.js',' const pad=Math.max',' if(o.readerSymbolLayout)maxWidth=readerSymbolLayout(lines,ctx,o);\n const pad=Math.max')
-patch('dist/emoji-vector.js','p.logoY=p.y-p.px*.88+(p.px-p.logo.height*p.logoScale)/2;', 'p.logoY=p.y+(o.readerSymbolLayout?p.symbolTop:-p.px*.88)+(p.px-p.logo.height*p.logoScale)/2;')
+patch('dist/emoji-vector.js',' const result={lines,w:', ' if(o.readerSymbolLayout)for(const l of lines)for(const p of l.parts)if(p.logo){p.logoScale=p.px/Math.max(p.logo.width,p.logo.height);p.logoX=p.x+(p.px-p.logo.width*p.logoScale)/2;p.logoY=p.y+p.symbolTop+(p.px-p.logo.height*p.logoScale)/2;}\n const result={lines,w:')
 patch('dist/vector-cache.js','JSON.stringify([!!o.emojiVector','JSON.stringify([!!o.readerSymbolLayout,!!o.emojiVector')
 for name in ['package.json','dist/app.js','dist/index.html']:
  p=app/name;s=p.read_text(encoding='utf-8');assert '2.9.192' in s;write(p,s.replace('2.9.192','2.9.193'));names.append(name)
