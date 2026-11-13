@@ -23,7 +23,8 @@ export function createApp(env=process.env,fetcher=fetch){
   if(req.method==='OPTIONS')return send(res,204,'');
   const u=new URL(req.url,'http://localhost');
   if(u.pathname==='/health')return send(res,200,{ok:true});
-  if(req.method==='GET'&&['/','/portal.js','/style.css'].includes(u.pathname)){const name=u.pathname==='/'?'index.html':u.pathname.slice(1);return send(res,200,readFileSync(new URL('./public/'+name,import.meta.url),'utf8'),name.endsWith('js')?'text/javascript':name.endsWith('css')?'text/css':'text/html');}
+  if(req.method==='GET'&&u.pathname==='/api/setup')return send(res,200,{configured:!!configured(),missing:['TIKTOK_APP_KEY','TIKTOK_APP_SECRET','TIKTOK_AUTH_URL','TIKTOK_SHOP_ID'].filter(k=>!env[k]),callback:(env.PUBLIC_URL||'')+'/tiktok/callback'});
+  if(req.method==='GET'&&['/','/connect','/portal.js','/style.css'].includes(u.pathname)){const name=['/','/connect'].includes(u.pathname)?'index.html':u.pathname.slice(1);return send(res,200,readFileSync(new URL('./public/'+name,import.meta.url),'utf8'),name.endsWith('js')?'text/javascript':name.endsWith('css')?'text/css':'text/html');}
   if(u.pathname==='/tiktok/callback'){
    if(!configured())return send(res,503,'SENZ TikTok connector belum dikonfigurasi. Sila lengkapkan tetapan Partner Center dan server.','text/plain');
    if(req.method!=='GET')return send(res,405,{error:'Method not allowed'});
@@ -36,7 +37,7 @@ export function createApp(env=process.env,fetcher=fetch){
   }
   if(!u.pathname.startsWith('/api/'))return send(res,404,{error:'Not found'});
   const supplied=(req.headers.authorization||'').replace(/^Bearer /,'');
-  if(!ready()||!timingSafeEqual(hash(supplied),hash(env.CONNECTOR_TOKEN)))return send(res,401,{error:'Masukkan Connector Token daripada tetapan server.'});
+  if(!ready()||!timingSafeEqual(hash(supplied),hash(env.CONNECTOR_TOKEN)))return send(res,401,{error:'Kunci akses SENZ tidak sah. Gunakan CONNECTOR_TOKEN daripada Railway Variables, bukan token TikTok.'});
   if(req.method==='GET'&&u.pathname==='/api/status'){const c=get('connection');return send(res,200,{configured:!!configured(),connected:!!c,shop:c?.shop?.name||null,callback:env.PUBLIC_URL?env.PUBLIC_URL+'/tiktok/callback':null,lastSync});}
   if(req.method==='POST'&&u.pathname==='/api/connect'){
    if(!configured())return send(res,503,{error:'Tetapkan TIKTOK_APP_KEY, TIKTOK_APP_SECRET, TIKTOK_AUTH_URL dan TIKTOK_SHOP_ID di server.'});

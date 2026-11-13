@@ -1,12 +1,14 @@
 # SENZ TikTok Shop Connector
 
-Read-only seller order integration for SENZ STUDIO v2.9.190. Uses official TikTok Shop seller authorization and API 202309. No scraping, chat access, fulfillment writes, or order-status changes.
+Read-only seller order integration for SENZ STUDIO v2.9.191. Uses official TikTok Shop seller authorization and API 202309. No scraping, chat access, fulfillment writes, or order-status changes.
 
 ## Deployment
 
 Node 24, no npm dependencies. `npm test`, then `npm start`. Dockerfile included. Persistent `/data` volume is required; it stores AES-256-GCM encrypted authorization and the most recent seven days of order lines. A successful complete sync replaces the cache. Disconnect deletes local server tokens/cache; revoke authorization separately in TikTok Seller Center.
 
-Live portal: https://senz-tiktok-production.up.railway.app
+Connection page: https://senz-tiktok-production.up.railway.app/connect
+
+This page displays missing server configuration before requesting an owner key. The SENZ access key (`CONNECTOR_TOKEN`) is different from the TikTok access token. The TikTok token is exchanged automatically at the callback after seller authorization; it never needs to be copied to the desktop.
 
 Redirect URL to register **exactly** in Partner Center:
 
@@ -31,9 +33,12 @@ Complete TikTok seller developer onboarding and enable/approve required seller a
 
 ## Preparing names
 
-Set exact seller SKU → installed font family + final ink width in inches + color. Read order variant and buyer message as references. Enter custom name explicitly and review it. Chat messages and personalization fields that TikTok does not provide are not guessed. Click **Masukkan nama disemak ke canvas**; only items with names and mappings are included. Unpaid/cancelled orders are excluded. The existing Auto Arrange tool can then arrange the imported names. Imported line IDs prevent duplicate imports within the same project; other projects can intentionally import them again.
+Choose a font from the fonts available in Studio, final ink width preset/custom width and color. No SKU input or mapping is required. Defaults apply to new incoming rows; use **Guna pada order ditanda** to apply them to checked rows. Each row has independent choices and a checkbox. Enter the custom name explicitly and review it. Chat messages and unavailable personalization fields are not guessed. Click **Masukkan nama disemak ke canvas**. All checked eligible rows must have a name and valid settings; unpaid/cancelled orders are excluded. Quantity comes from the order. Imported line IDs prevent duplicates within the same project.
 
-Portal fallback exports reviewed JSON; the desktop integration uses the same review UI and imports directly. Mappings are stored locally; names are held only in the tab/window memory until placed on canvas. Do not close before importing. Server stores no recipient address/phone/email.
+The web portal offers bundled font names; the desktop offers its actual installed font list. Missing fonts are never silently substituted during canvas import. Design defaults are stored locally; names and per-order drafts stay in window memory until placed on canvas. Token stays in window memory. Do not close before importing. The server does not store recipient address/phone/email.
+
+Use the **Kunci akses SENZ & tetapan sambungan** section for the owner key. If authorization remains unavailable, complete the missing `TIKTOK_*` variables shown at the top and redeploy. Without those variables no real token exchange is possible. The page being reachable does not mean the shop is authorized.
+
 
 ## Security and limits
 

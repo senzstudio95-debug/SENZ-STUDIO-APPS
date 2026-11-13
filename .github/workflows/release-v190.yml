@@ -1,8 +1,5 @@
 name: Build v2.9.190 TikTok order connector
 on:
-  push:
-    branches: [main]
-    paths: [release-tools/v190/**, integrations/tiktok/**, .github/workflows/release-v190.yml]
   workflow_dispatch:
 permissions:
   contents: write
