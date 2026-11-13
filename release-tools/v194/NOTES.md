@@ -1,0 +1,1 @@
+SENZREADER heart placement adjusted to the latest reference: actual heart height is 80% of the lettering ink height, its tip sits near the bottom of the lettering, and the gap follows the reference. Aspect ratio is preserved. Existing Reader vector-mode protection and order dimensions are retained. Add names again from Reader to apply the new placement.
