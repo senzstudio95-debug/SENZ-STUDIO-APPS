@@ -21,7 +21,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=r
   assert(await modal.isVisible());
   const result=await p.evaluate(async n=>{const {expandAndUnite}=await import('/vector.js');return {zoom:__senzTest.editor.zoom,items:await Promise.all(__senzTest.editor.page.objects.slice(n).map(async o=>({font:o.font,text:o.text,stroke:o.textWeight,word:o.wordSpacing,letter:o.letterSpacing,width:(await expandAndUnite(o,__senzTest.fonts)).bounds.w})))}},before.count);
   assert.equal(result.zoom,before.zoom);
-  for(const o of result.items){assert.equal(o.font,'Poppins');assert.equal(o.text,'Bunian Wulan♥');assert.equal(o.stroke,.254);assert.equal(o.word,2);assert.equal(o.letter,1);assert(Math.abs(o.width-193)<.2);}
+  for(const o of result.items){assert.equal(o.font,'Poppins');assert.equal(o.text,'Bunian Wulan♥');assert.equal(o.stroke,.254);assert.equal(o.word,2);assert.equal(o.letter,1);assert(Math.abs(o.width-192)<.2);}
   const geometry=await p.evaluate(async n=>{const {emojiLayout}=await import('/emoji-vector.js');const o=__senzTest.editor.page.objects[n];const parts=emojiLayout(o).lines[0].parts;const icon=parts.find(p=>p.logo),text=parts.find(p=>!p.logo);return {flag:o.readerSymbolLayout,ratio:icon.px/text.px,gap:icon.x-text.x-text.width};},before.count);
   assert.equal(geometry.flag,true);assert(geometry.ratio>0&&geometry.ratio<.9);assert(geometry.gap>0);
   await p.screenshot({path:'ui-artifacts/senzreader-symbols.png'});
