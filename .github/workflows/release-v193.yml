@@ -1,0 +1,96 @@
+name: Build v2.9.193 SENZREADER symbol placement
+on:
+  push:
+    branches: [main]
+    paths: [release-tools/v193/**, .github/workflows/release-v193.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: release-v193
+  cancel-in-progress: true
+jobs:
+  windows-test:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Prepare exact v192 base with SENZREADER integration
+        shell: bash
+        run: |
+          gh release download v2.9.192 --pattern SENZ-STUDIO-UPDATE-v2.9.192.exe
+          python release-tools/v193/prepare.py
+          cd apps/senz-tube
+          npm ci
+      - name: Test full Studio startup and second instance
+        shell: bash
+        run: node release-tools/v189/studio-startup.test.cjs payload/resources/app
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: studio-windows-startup
+          path: apps/senz-tube/ui-artifacts/
+  release:
+    needs: windows-test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Verify stable base
+        run: test "$(gh api repos/$GH_REPO/releases/latest --jq .tag_name)" = v2.9.192
+      - name: Install package tools
+        run: |
+          sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 update -qq
+          sudo apt-get -o Acquire::Retries=1 -o Acquire::http::Timeout=30 install -y nsis p7zip-full
+      - name: Prepare and verify unchanged files
+        run: |
+          gh release download v2.9.192 --pattern SENZ-STUDIO-UPDATE-v2.9.192.exe
+          python3 release-tools/v193/prepare.py
+      - name: Install browser checks
+        run: |
+          npm install --no-save --ignore-scripts playwright@1.56.1
+          npx playwright install chromium
+      - name: Test UI interactions and artwork preservation
+        run: |
+          node release-tools/v179/layout.test.mjs
+          node release-tools/v182/dense.test.mjs
+          node release-tools/v193/ui-test.cjs
+          node release-tools/v193/symbol.test.cjs
+          for f in integrations/senzreader/Studio-Bridge/tests/*.cjs integrations/senzreader/SENZ-Reader/tests/*.cjs; do node "$f"; done
+          SENZ_APP="$PWD/payload/resources/app" node --test release-tools/demo.test.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: scoped-ui-check
+          path: ui-artifacts/
+      - name: Package and verify all installer files
+        run: python3 release-tools/v193/package.py
+      - name: Publish verified release
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(gh api repos/$GH_REPO/releases/latest --jq .tag_name)" = v2.9.192
+          gh release create v2.9.193 SENZ-STUDIO-UPDATE-v2.9.193.exe SHA256SUMS.txt --draft --target "$GITHUB_SHA" --title 'SENZ STUDIO v2.9.193 - Built-in SENZREADER' --notes-file release-tools/v193/NOTES.md
+          rid=$(gh api repos/$GH_REPO/releases --jq '.[] | select(.tag_name=="v2.9.193" and .draft==true) | .id')
+          gh api repos/$GH_REPO/releases/$rid > draft.json
+          node <<'JS'
+          const fs=require('fs'),crypto=require('crypto'),path=require('path'),d=JSON.parse(fs.readFileSync('draft.json')),name='SENZ-STUDIO-UPDATE-v2.9.193.exe',f=fs.readFileSync(name),a=d.assets.find(a=>a.name===name);
+          if(!a||a.size!==f.length||a.digest!=='sha256:'+crypto.createHash('sha256').update(f).digest('hex'))throw Error('Uploaded installer differs');
+          for(const a of d.assets)a.browser_download_url=`https://github.com/${process.env.GH_REPO}/releases/download/${d.tag_name}/${a.name}`;
+          if(!require(path.resolve('payload/resources/app/update-core.cjs')).release({...d,draft:false},process.env.GH_REPO,'2.9.189'))throw Error('Invalid update metadata');
+          JS
+          gh api --method PATCH repos/$GH_REPO/releases/$rid -F draft=false -f make_latest=true > /dev/null
+          test "$(gh api repos/$GH_REPO/releases/latest --jq .tag_name)" = v2.9.193
+

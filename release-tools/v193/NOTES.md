@@ -1,0 +1,1 @@
+SENZREADER symbol placement now follows the supplied name-sticker reference: compact heart size, centered against the actual lettering, and a small gap beside the name. New Reader imports use this layout; existing canvas artwork keeps its layout. Order width still includes both text and symbols.
