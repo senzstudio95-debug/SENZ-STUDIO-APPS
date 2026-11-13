@@ -2,7 +2,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=r
 (async()=>{
  const root=path.resolve('payload/resources/app/dist');
  const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.svg':'image/svg+xml','.json':'application/json','.wasm':'application/wasm','.ttf':'font/ttf'};
- const server=http.createServer((req,res)=>{const url=new URL(req.url,'http://localhost');let file=path.resolve(root,'.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));if(!file.startsWith(root+path.sep)){res.writeHead(403).end();return;}fs.readFile(file,(e,data)=>{if(e){res.writeHead(404).end();return;}res.setHeader('Content-Type',types[path.extname(file)]||'application/octet-stream');if(file===path.join(root,'app.js'))data=Buffer.concat([data,Buffer.from('\nwindow.__senzTest={get editor(){return editor}};\n')]);res.end(data);});});
+ const server=http.createServer((req,res)=>{const url=new URL(req.url,'http://localhost');let file=path.resolve(root,'.'+decodeURIComponent(url.pathname==='/'?'/index.html':url.pathname));if(!file.startsWith(root+path.sep)){res.writeHead(403).end();return;}fs.readFile(file,(e,data)=>{if(e){res.writeHead(404).end();return;}res.setHeader('Content-Type',types[path.extname(file)]||'application/octet-stream');if(file===path.join(root,'app.js'))data=Buffer.concat([data,Buffer.from('\nwindow.__senzTest={get editor(){return editor},get fonts(){return fonts}};\n')]);res.end(data);});});
  await new Promise(r=>server.listen(8765,'127.0.0.1',r));
  const b=await chromium.launch({headless:true,...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{}),args:['--no-sandbox']});const p=await b.newPage({viewport:{width:1440,height:1000}});p.setDefaultTimeout(20000);
  const errors=[];p.on('pageerror',e=>errors.push(e.message));fs.mkdirSync('ui-artifacts',{recursive:true});
@@ -19,7 +19,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=r
   await modal.locator('#add').click();
   await p.waitForFunction(n=>__senzTest.editor.page.objects.length===n+2,before.count);
   assert(await modal.isVisible());
-  const result=await p.evaluate(async n=>{const {getVector}=await import('/vector-cache.js');return {zoom:__senzTest.editor.zoom,items:__senzTest.editor.page.objects.slice(n).map(o=>({font:o.font,text:o.text,stroke:o.textWeight,word:o.wordSpacing,letter:o.letterSpacing,width:getVector(o).bounds.w}))}},before.count);
+  const result=await p.evaluate(async n=>{const {expandAndUnite}=await import('/vector.js');return {zoom:__senzTest.editor.zoom,items:await Promise.all(__senzTest.editor.page.objects.slice(n).map(async o=>({font:o.font,text:o.text,stroke:o.textWeight,word:o.wordSpacing,letter:o.letterSpacing,width:(await expandAndUnite(o,__senzTest.fonts)).bounds.w})))}},before.count);
   assert.equal(result.zoom,before.zoom);
   for(const o of result.items){assert.equal(o.font,'Poppins');assert.equal(o.text,'Bunian Wulan');assert.equal(o.stroke,.254);assert.equal(o.word,2);assert.equal(o.letter,1);assert(Math.abs(o.width-192)<.2);}
   await p.screenshot({path:'ui-artifacts/senzreader-integrated.png'});
