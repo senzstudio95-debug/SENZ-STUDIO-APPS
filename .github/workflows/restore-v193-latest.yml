@@ -1,0 +1,24 @@
+name: Restore v2.9.193 as latest
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/restore-v193-latest.yml]
+permissions:
+  contents: write
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Restore requested stable release
+        shell: bash
+        run: |
+          set -euo pipefail
+          current=$(gh api repos/$GH_REPO/releases/latest --jq .tag_name)
+          test "$current" = v2.9.194 || test "$current" = v2.9.193
+          gh api repos/$GH_REPO/releases/444798040 --jq 'select(.tag_name=="v2.9.193" and .draft==false and .prerelease==false) | .assets[] | select(.name=="SENZ-STUDIO-UPDATE-v2.9.193.exe" and .size==557508191) | .id' | grep -Eq '^[0-9]+$'
+          gh api --method PATCH repos/$GH_REPO/releases/444798040 -f make_latest=true > /dev/null
+          test "$(gh api repos/$GH_REPO/releases/latest --jq .tag_name)" = v2.9.193
