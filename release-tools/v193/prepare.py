@@ -28,4 +28,5 @@ after={p.relative_to(root).as_posix():digest(p) for p in root.rglob('*') if p.is
 assert set(before)<=set(after)
 assert {n for n in after if before.get(n)!=after[n]}<={'resources/app/'+n for n in names+['SOURCE-SHA256.json']}
 assert all(after[n]==sha for n,sha in before.items() if n.startswith('resources/app/tube/'))
+print((app/'dist/emoji-vector.js').read_text(encoding='utf-8'))
 Path('payload193.json').write_text(json.dumps(after));print('SENZREADER integrated; all unrelated files unchanged')
