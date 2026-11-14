@@ -38,5 +38,5 @@ def patch(app):
  for name in ['dist/toolbar-glass.js','dist/side-toolbar.js']:
   edit(name,lambda s:s.replace("||b.hasAttribute('data-vector-eraser')",'').replace("||button.hasAttribute('data-vector-eraser')",''))
  for name in ['package.json','dist/app.js','dist/index.html']:
-  p=app/name;s=p.read_text();assert '2.9.197' in s;p.write_bytes(s.replace('2.9.197','2.9.198').encode());names.append(name)
+  p=app/name;s=p.read_text(encoding='utf-8');assert '2.9.197' in s;p.write_bytes(s.replace('2.9.197','2.9.198').encode());names.append(name)
  return sorted(set(names))
