@@ -1,0 +1,1 @@
+SENZREADER symbol sizing and placement now follow the supplied AidaZamri / ZamZahirah reference. Heart, bow and butterfly use individual ink-height proportions and vertical offsets with tight, non-overlapping gaps. Symbols stay vector artwork, order widths remain exact, and the prepared Add to Canvas fast path is retained.
