@@ -8,6 +8,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=r
  const errors=[];p.on('pageerror',e=>errors.push(e.message));fs.mkdirSync('ui-artifacts',{recursive:true});
  try{
   await p.goto('http://127.0.0.1:8765');await p.waitForFunction(()=>window.__senzTest?.editor&&document.querySelector('.canvas-guide-layer')&&document.querySelector('.quick-font .qmini-handle'),null,{timeout:90000});
+  await p.waitForFunction(()=>window.senzStudio?.version==='2.9.198');
   await p.evaluate(()=>{for(const d of document.querySelectorAll('dialog[open]'))d.close();});
   assert.match(await p.title(),/SENZ STUDIO PRO/);
   assert.match(await p.locator('.brand-copy strong').innerText(),/^SENZ STUDIO PRO/);
@@ -17,7 +18,9 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=r
   assert.equal(await p.locator('[data-pathfinder]').getAttribute('data-rail-id'),'9');
   await p.evaluate(()=>{__senzTest.editor.finishEdit();__senzTest.editor.viewport.focus();});
   await p.keyboard.press('e');assert(!await p.evaluate(()=>__senzTest.editor.vectorTool));
+  await p.evaluate(()=>{__senzTest.editor.finishEdit();__senzTest.editor.viewport.focus();});
   await p.keyboard.press('-');assert(!await p.evaluate(()=>__senzTest.editor.vectorTool));
+  await p.evaluate(()=>{__senzTest.editor.finishEdit();__senzTest.editor.viewport.focus();});
   await p.keyboard.press('p');assert.equal(await p.evaluate(()=>__senzTest.editor.vectorTool),'pen');
   await p.keyboard.press('Escape');
   await p.locator('[data-vector-pen]').focus();await p.keyboard.press('ArrowDown');
