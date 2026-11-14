@@ -15,6 +15,7 @@ const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=r
   assert.equal(await p.locator('[data-vector-eraser],[data-vector-choice="delete"]').count(),0);
   assert.equal(await p.locator('[data-vector-pen]').getAttribute('data-rail-id'),'8');
   assert.equal(await p.locator('[data-pathfinder]').getAttribute('data-rail-id'),'9');
+  await p.evaluate(()=>{__senzTest.editor.finishEdit();__senzTest.editor.viewport.focus();});
   await p.keyboard.press('e');assert(!await p.evaluate(()=>__senzTest.editor.vectorTool));
   await p.keyboard.press('-');assert(!await p.evaluate(()=>__senzTest.editor.vectorTool));
   await p.keyboard.press('p');assert.equal(await p.evaluate(()=>__senzTest.editor.vectorTool),'pen');
