@@ -1,0 +1,37 @@
+name: Compress Studio v2.9.200 without changing app files
+on:
+  push:
+    branches: [main]
+    paths: [release-tools/compact200/**, .github/workflows/compact-v200.yml]
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: compact-v200
+  cancel-in-progress: true
+jobs:
+  compress:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install compression tools
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y nsis p7zip-full
+      - name: Download pinned installer
+        run: gh release download v2.9.200 --pattern SENZ-STUDIO-UPDATE-v2.9.200.exe
+      - name: Compress and verify every extracted file
+        run: python3 release-tools/compact200/build.py
+      - name: Publish verified alternate downloads
+        run: |
+          gh release upload v2.9.200 SENZ-STUDIO-COMPACT-v2.9.200.exe COMPACT-SHA256SUMS.txt COMPACT-REPORT.json
+          if test -f SENZ-STUDIO-PRO-v2.9.200-399MB.zip; then gh release upload v2.9.200 SENZ-STUDIO-PRO-v2.9.200-399MB.zip; fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: compression-report
+          path: COMPACT-REPORT.json
