@@ -1,0 +1,21 @@
+name: Publish reviewed 3D Buddy v2.9.202
+on:
+  push:
+    branches: [main]
+    paths: [release-tools/publish-v202.json, release-tools/publish-v202.cjs, .github/workflows/publish-v202.yml]
+permissions:
+  contents: write
+  actions: read
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node release-tools/publish-v202.cjs
