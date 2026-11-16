@@ -1,0 +1,25 @@
+const {chromium}=require('playwright'),assert=require('node:assert/strict'),fs=require('node:fs'),path=require('node:path'),http=require('node:http'),crypto=require('node:crypto');
+(async()=>{
+ const root=path.resolve('payload/resources/app/dist'),types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.png':'image/png','.webp':'image/webp'};
+ const server=http.createServer((req,res)=>{const url=new URL(req.url,'http://localhost');let file=path.resolve(root,'.'+decodeURIComponent(url.pathname));if(!file.startsWith(root+path.sep)){res.writeHead(403).end();return;}if(url.pathname==='/buddy-test.html'){res.setHeader('Content-Type','text/html');res.end(`<html><style>body{background:#eef2f7;font-family:Arial}.senz-buddy{width:400px;height:400px}.buddy-sprite{width:400px;height:400px}.senz-buddy[hidden]{display:none}</style><div class="senz-buddy" hidden><canvas class="buddy-sprite"></canvas></div><script type="module">import {install3DRenderer,motionFor} from '/buddy-3d.js';window.root=document.querySelector('.senz-buddy');window.motionFor=motionFor;window.sync=install3DRenderer(root);window.ready=true;</script></html>`);return;}
+ fs.readFile(file,(e,data)=>{if(e){res.writeHead(404).end();return;}res.setHeader('Content-Type',types[path.extname(file)]||'application/octet-stream');res.end(data);});});
+ await new Promise(r=>server.listen(8766,'127.0.0.1',r));
+ const browser=await chromium.launch({headless:true,...(process.env.CHROMIUM_PATH?{executablePath:process.env.CHROMIUM_PATH}:{}),args:['--no-sandbox','--use-gl=angle','--use-angle=swiftshader','--enable-unsafe-swiftshader']});
+ const p=await browser.newPage({viewport:{width:800,height:700}}),errors=[],requests=[];p.on('pageerror',e=>errors.push(e.message));p.on('request',r=>requests.push(r.url()));fs.mkdirSync('ui-artifacts',{recursive:true});
+ try{
+  await p.goto('http://127.0.0.1:8766/buddy-test.html');await p.waitForFunction(()=>window.ready);assert(!requests.some(u=>u.endsWith('.bin')),'disabled Buddy must not load 3D data');
+  await p.evaluate(()=>root.hidden=false);await p.waitForFunction(()=>document.querySelector('canvas').dataset.renderer==='webgl');await p.waitForFunction(()=>document.querySelector('canvas')._buddyFrames>8);
+  const pixels=await p.evaluate(()=>{const c=document.querySelector('canvas'),g=c.getContext('webgl'),a=new Uint8Array(c.width*c.height*4);g.readPixels(0,0,c.width,c.height,g.RGBA,g.UNSIGNED_BYTE,a);return {err:g.getError(),w:c.width,h:c.height};});assert.equal(pixels.err,0);assert(pixels.w<=512&&pixels.h<=512);
+  const hashes=new Set();for(const state of ['idle','wave','walk','dance','turn','sleep']){
+   await p.evaluate(s=>root.dataset.state=s,state);await p.waitForTimeout(900);const b=await p.locator('canvas').screenshot({path:`ui-artifacts/buddy-3d-${state}.png`});hashes.add(crypto.createHash('sha256').update(b).digest('hex'));
+  }assert.equal(hashes.size,6,'distinct rendered 3D motions');
+  await p.evaluate(()=>root.hidden=true);await p.waitForTimeout(100);const hiddenFrames=await p.evaluate(()=>document.querySelector('canvas')._buddyFrames);await p.waitForTimeout(300);assert.equal(await p.evaluate(()=>document.querySelector('canvas')._buddyFrames),hiddenFrames,'hidden Buddy stops drawing');
+  await p.evaluate(()=>root.hidden=false);await p.waitForFunction(n=>document.querySelector('canvas')._buddyFrames>n,hiddenFrames);
+  await p.emulateMedia({reducedMotion:'reduce'});await p.waitForTimeout(150);const paused=await p.evaluate(()=>document.querySelector('canvas')._buddyFrames);await p.waitForTimeout(250);assert.equal(await p.evaluate(()=>document.querySelector('canvas')._buddyFrames),paused,'reduced motion is static');
+  await p.evaluate(()=>{const c=document.querySelector('canvas');window.loss=c.getContext('webgl').getExtension('WEBGL_lose_context');loss.loseContext();});await p.waitForFunction(()=>document.querySelector('canvas').dataset.renderer==='restoring');await p.evaluate(()=>loss.restoreContext());await p.waitForFunction(()=>document.querySelector('canvas').dataset.renderer==='webgl');
+  assert.equal(requests.filter(u=>u.endsWith('buddy-3d.bin')).length,1,'context restore reuses cached geometry');
+  await p.evaluate(()=>sync.dispose());
+  const fallback=await browser.newPage();await fallback.addInitScript(()=>{const original=HTMLCanvasElement.prototype.getContext;HTMLCanvasElement.prototype.getContext=function(type,...a){return type==='webgl'?null:original.call(this,type,...a);};});await fallback.goto('http://127.0.0.1:8766/buddy-test.html');await fallback.waitForFunction(()=>window.ready);await fallback.evaluate(()=>root.hidden=false);await fallback.waitForFunction(()=>document.querySelector('canvas').dataset.renderer==='poster');assert.match(await fallback.locator('canvas').evaluate(c=>getComputedStyle(c).backgroundImage),/buddy-3d-poster/);await fallback.close();
+  assert.deepEqual(errors,[]);console.log('3D Buddy: lazy load, six rendered motions, pause, reduced motion, context restore, GPU fallback PASS');
+ }finally{await browser.close();await new Promise(r=>server.close(r));}
+})().catch(e=>{console.error(e);process.exit(1)});
