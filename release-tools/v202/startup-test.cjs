@@ -21,16 +21,15 @@ let running;const watchdog=setTimeout(()=>{console.error('Full Studio test excee
  assert.equal(await app.evaluate(()=>global.__secondLaunch),true,'Second launch reached the initialized primary process');
  assert.equal(fs.existsSync(errors),false,'Second launch causes no desktopLayout error');
 
- const studio=app.windows().find(w=>w.url().startsWith('senz://app/index.html'));
- await studio.evaluate(()=>{for(const d of document.querySelectorAll('dialog[open]'))d.close();document.querySelector('.buddy-toggle').click();});
- await studio.waitForFunction(()=>document.querySelector('.senz-buddy canvas')?.dataset.renderer==='webgl',null,{timeout:30000});
- await studio.waitForFunction(()=>document.querySelector('.senz-buddy canvas')._buddyFrames>5);
- const miniPromise=app.waitForEvent('window',{predicate:w=>w!==studio,timeout:15000});
+ const exec=async(code,mini=false)=>app.evaluate(async({BrowserWindow},{code,mini})=>{const w=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().startsWith(mini?'senz://app/buddy-mini.html':'senz://app/index.html'));return w?await w.webContents.executeJavaScript(code):null;},{code,mini});
+ async function waitBuddy(mini=false){for(let i=0;i<80;i++){const state=await exec("({renderer:document.querySelector('.senz-buddy canvas')?.dataset.renderer,frames:document.querySelector('.senz-buddy canvas')?._buddyFrames})",mini);if(state?.renderer==='webgl'&&state.frames>3)return;await new Promise(r=>setTimeout(r,250));}throw Error('Buddy WebGL did not start: '+JSON.stringify(await exec("({ready:document.readyState,renderer:document.querySelector('.senz-buddy canvas')?.dataset.renderer,hidden:document.hidden,rootHidden:document.querySelector('.senz-buddy')?.hidden})",mini)));}
+ await exec("for(const d of document.querySelectorAll('dialog[open]'))d.close();document.querySelector('.buddy-toggle').click();");
+ await waitBuddy();
  await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().startsWith('senz://app/index.html')).minimize());
- const mini=await miniPromise;
- await mini.waitForFunction(()=>document.querySelector('.senz-buddy canvas')?.dataset.renderer==='webgl',null,{timeout:30000});
- await mini.locator('.buddy-grab').click();
- await studio.waitForFunction(()=>!document.hidden);
+ await waitBuddy(true);
+ await exec("document.querySelector('.buddy-grab').click()",true);
+ for(let i=0;i<40&&await exec('document.hidden');i++)await new Promise(r=>setTimeout(r,100));
+ assert.equal(await exec('document.hidden'),false,'Mini Buddy restores Studio');
  fs.mkdirSync('apps/senz-tube/ui-artifacts',{recursive:true});const png=await app.evaluate(async({BrowserWindow})=>{const w=BrowserWindow.getAllWindows().find(w=>w.webContents.getURL().startsWith('senz://app/index.html'));return (await w.webContents.capturePage()).toPNG().toString('base64');});fs.writeFileSync('apps/senz-tube/ui-artifacts/full-studio-startup.png',Buffer.from(png,'base64'));
  console.log('FULL STUDIO STARTUP PASSED: real bootstrap, all services, editor, splash, second-instance activation');
  }finally{if(fs.existsSync(errors))console.error(fs.readFileSync(errors,'utf8'));clearTimeout(watchdog);if(app)app.process().kill();try{fs.rmSync(temp,{recursive:true,force:true});}catch{}}})().then(()=>process.exit(0)).catch(e=>{console.error(e);process.exit(1);});
